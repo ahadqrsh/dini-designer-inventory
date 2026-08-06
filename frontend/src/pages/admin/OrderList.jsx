@@ -134,8 +134,14 @@ export default function OrderList() {
 
   // Business Analytics Metrics
   const totalRevenue = orders.reduce((acc, curr) => acc + (parseFloat(curr.total_price) || 0), 0);
+  // Delivered orders are treated as settled everywhere else in this page, so
+  // they must not keep inflating the outstanding balance figure.
   const totalPendingBalance = orders.reduce(
-    (acc, curr) => acc + Math.max(0, (parseFloat(curr.total_price) || 0) - (parseFloat(curr.advance_paid) || 0)),
+    (acc, curr) =>
+      curr.status === 'Delivered'
+        ? acc
+        : acc +
+          Math.max(0, (parseFloat(curr.total_price) || 0) - (parseFloat(curr.advance_paid) || 0)),
     0
   );
   const activeOrdersCount = orders.filter((o) => o.status !== 'Delivered').length;
@@ -415,53 +421,58 @@ export default function OrderList() {
               </div>
 
               {/* Financial Summary.
-                  Once the order is fully paid there is no balance worth showing,
-                  so the Remaining card is replaced by a paid-in-full confirmation
-                  rather than displaying ₹0 or a negative number. */}
+                  An order counts as settled when the recorded payment covers the
+                  total, OR when it has been delivered — handing the garment over
+                  means the balance was collected. In both cases the Remaining
+                  card is dropped and the payment reads as complete. */}
               {(() => {
                 const total = parseFloat(selectedOrder.total_price) || 0;
-                const paid = parseFloat(selectedOrder.advance_paid) || 0;
-                const remaining = total - paid;
-                const settled = remaining <= 0;
+                const recorded = parseFloat(selectedOrder.advance_paid) || 0;
+                const delivered = selectedOrder.status === 'Delivered';
+                const settled = total - recorded <= 0 || delivered;
+
+                // When settled, never show less than the total as paid.
+                const paid = settled ? Math.max(recorded, total) : recorded;
+                const remaining = total - recorded;
 
                 return (
-                  <div className={`grid gap-3 ${settled ? 'grid-cols-2' : 'grid-cols-3'}`}>
-                    <div className="rounded-xl border border-stone-200 bg-white p-3.5 text-center">
-                      <p className="eyebrow">Total</p>
-                      <p className="mt-1.5 font-display text-lg font-semibold text-stone-900">
-                        ₹{total.toLocaleString('en-IN')}
-                      </p>
-                    </div>
-
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-center">
-                      <p className="eyebrow text-emerald-700">
-                        {settled ? 'Paid' : 'Advance'}
-                      </p>
-                      <p className="mt-1.5 font-display text-lg font-semibold text-emerald-700">
-                        ₹{paid.toLocaleString('en-IN')}
-                      </p>
-                    </div>
-
-                    {!settled && (
-                      <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 text-center">
-                        <p className="eyebrow text-red-700">Remaining</p>
-                        <p className="mt-1.5 font-display text-lg font-semibold text-red-600">
-                          ₹{remaining.toLocaleString('en-IN')}
+                  <>
+                    <div className={`grid gap-3 ${settled ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                      <div className="rounded-xl border border-stone-200 bg-white p-3.5 text-center">
+                        <p className="eyebrow">Total</p>
+                        <p className="mt-1.5 font-display text-lg font-semibold text-stone-900">
+                          ₹{total.toLocaleString('en-IN')}
                         </p>
                       </div>
+
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-center">
+                        <p className="eyebrow text-emerald-700">{settled ? 'Paid' : 'Advance'}</p>
+                        <p className="mt-1.5 font-display text-lg font-semibold text-emerald-700">
+                          ₹{paid.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+
+                      {!settled && (
+                        <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 text-center">
+                          <p className="eyebrow text-red-700">Remaining</p>
+                          <p className="mt-1.5 font-display text-lg font-semibold text-red-600">
+                            ₹{remaining.toLocaleString('en-IN')}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    {settled && (
+                      <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-emerald-800">
+                        <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+                        {delivered && remaining > 0
+                          ? 'Settled on delivery'
+                          : 'Paid in full — no balance due'}
+                      </div>
                     )}
-                  </div>
+                  </>
                 );
               })()}
-
-              {(parseFloat(selectedOrder.total_price) || 0) -
-                (parseFloat(selectedOrder.advance_paid) || 0) <=
-                0 && (
-                <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-emerald-800">
-                  <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
-                  Paid in full — no balance due
-                </div>
-              )}
             </div>
 
             <div className="sticky bottom-0 rounded-b-2xl border-t border-stone-200 bg-stone-50/95 p-4 backdrop-blur">
