@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Loader2,
   Inbox,
+  ChevronDown,
 } from '../../components/Icons';
 
 const CATEGORY_MAP = {
@@ -33,6 +34,50 @@ function SectionHead({ Icon, title, subtitle, right }) {
       </div>
       {right}
     </div>
+  );
+}
+
+/**
+ * Same header, but the whole bar is a button that expands the section.
+ * Forms start collapsed so the page opens on the reference data (logs and
+ * stock) rather than two long forms.
+ */
+function CollapsibleHead({ Icon, title, subtitle, open, onToggle, controls }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls={controls}
+      className={`card-head flex w-full flex-wrap items-center justify-between gap-3 text-left transition-colors ${
+        open ? 'bg-amber-50/50' : 'hover:bg-stone-50'
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-amber-100 text-amber-800">
+          <Icon className="h-[18px] w-[18px]" strokeWidth={2.2} />
+        </span>
+        <div>
+          <h3 className="section-title">{title}</h3>
+          {subtitle && <p className="subtle">{subtitle}</p>}
+        </div>
+      </div>
+
+      <span className="flex items-center gap-2.5">
+        <span className="hidden text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500 sm:inline">
+          {open ? 'Hide' : 'Open'}
+        </span>
+        <span
+          className={`grid h-8 w-8 place-items-center rounded-lg border transition-all duration-200 ${
+            open
+              ? 'rotate-180 border-amber-200 bg-amber-50 text-amber-700'
+              : 'border-stone-300 bg-white text-stone-500'
+          }`}
+        >
+          <ChevronDown className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+      </span>
+    </button>
   );
 }
 
@@ -72,6 +117,10 @@ export default function FabricInventory() {
   const [issuing, setIssuing] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [issueMessage, setIssueMessage] = useState({ type: '', text: '' });
+
+  // Both forms start collapsed — the page leads with the logs and stock table
+  const [showIssueForm, setShowIssueForm] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   // Add Fabric Form State
   const [code, setCode] = useState('');
@@ -337,14 +386,21 @@ export default function FabricInventory() {
       </div>
 
       {/* ---------- 1. ISSUE FABRIC FORM ---------- */}
-      <section className="card">
-        <SectionHead
+      <section className="card overflow-hidden">
+        <CollapsibleHead
           Icon={Send}
           title="Issue Fabric To Worker"
           subtitle="Assign stock to workers based on category and subcategory."
+          open={showIssueForm}
+          onToggle={() => setShowIssueForm((v) => !v)}
+          controls="issue-fabric-form"
         />
 
-        <div className="card-body space-y-4">
+        <div
+          id="issue-fabric-form"
+          hidden={!showIssueForm}
+          className="card-body space-y-4"
+        >
           <Alert state={issueMessage} />
 
           <form
@@ -540,14 +596,21 @@ export default function FabricInventory() {
       </section>
 
       {/* ---------- 3. ADD NEW FABRIC STOCK FORM ---------- */}
-      <section className="card">
-        <SectionHead
+      <section className="card overflow-hidden">
+        <CollapsibleHead
           Icon={PackagePlus}
           title="Add New Fabric Stock"
           subtitle="Register a new roll into inventory"
+          open={showAddForm}
+          onToggle={() => setShowAddForm((v) => !v)}
+          controls="add-fabric-form"
         />
 
-        <div className="card-body space-y-4">
+        <div
+          id="add-fabric-form"
+          hidden={!showAddForm}
+          className="card-body space-y-4"
+        >
           <Alert state={message} />
 
           <form

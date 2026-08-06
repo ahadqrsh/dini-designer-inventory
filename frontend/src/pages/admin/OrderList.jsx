@@ -12,6 +12,7 @@ import {
   FileText,
   StickyNote,
   Loader2,
+  CheckCircle2,
 } from '../../components/Icons';
 
 const STATUS_COLOURS = {
@@ -253,6 +254,7 @@ export default function OrderList() {
                 ) : (
                   filteredOrders.map((order) => {
                     const balance = (order.total_price || 0) - (order.advance_paid || 0);
+                    const isDelivered = order.status === 'Delivered';
                     return (
                       <tr key={order.id} className="group">
                         <td className="whitespace-nowrap font-mono text-xs text-stone-500">
@@ -286,16 +288,28 @@ export default function OrderList() {
                           </select>
                         </td>
                         <td className="whitespace-nowrap text-xs">
-                          <div className="font-semibold text-stone-600">
-                            Total: <span className="font-bold text-stone-900">₹{order.total_price}</span>
-                          </div>
-                          <div
-                            className={`mt-1 font-bold ${
-                              balance > 0 ? 'text-red-600' : 'text-emerald-700'
-                            }`}
-                          >
-                            {balance > 0 ? `Due: ₹${balance}` : 'Paid in Full'}
-                          </div>
+                          {isDelivered ? (
+                            // Delivered orders are closed out — the money view is
+                            // noise here. The register modal still holds the record.
+                            <span className="pill-neutral">
+                              <CheckCircle2 className="h-3 w-3" strokeWidth={2.5} />
+                              Settled
+                            </span>
+                          ) : (
+                            <>
+                              <div className="font-semibold text-stone-600">
+                                Total:{' '}
+                                <span className="font-bold text-stone-900">₹{order.total_price}</span>
+                              </div>
+                              <div
+                                className={`mt-1 font-bold ${
+                                  balance > 0 ? 'text-red-600' : 'text-emerald-700'
+                                }`}
+                              >
+                                {balance > 0 ? `Due: ₹${balance}` : 'Paid in Full'}
+                              </div>
+                            </>
+                          )}
                         </td>
                         <td className="text-center">
                           <button
@@ -400,27 +414,54 @@ export default function OrderList() {
                 </p>
               </div>
 
-              {/* Financial Summary */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-xl border border-stone-200 bg-white p-3.5 text-center">
-                  <p className="eyebrow">Total</p>
-                  <p className="mt-1.5 font-display text-lg font-extrabold text-stone-900">
-                    ₹{selectedOrder.total_price}
-                  </p>
+              {/* Financial Summary.
+                  Once the order is fully paid there is no balance worth showing,
+                  so the Remaining card is replaced by a paid-in-full confirmation
+                  rather than displaying ₹0 or a negative number. */}
+              {(() => {
+                const total = parseFloat(selectedOrder.total_price) || 0;
+                const paid = parseFloat(selectedOrder.advance_paid) || 0;
+                const remaining = total - paid;
+                const settled = remaining <= 0;
+
+                return (
+                  <div className={`grid gap-3 ${settled ? 'grid-cols-2' : 'grid-cols-3'}`}>
+                    <div className="rounded-xl border border-stone-200 bg-white p-3.5 text-center">
+                      <p className="eyebrow">Total</p>
+                      <p className="mt-1.5 font-display text-lg font-semibold text-stone-900">
+                        ₹{total.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-center">
+                      <p className="eyebrow text-emerald-700">
+                        {settled ? 'Paid' : 'Advance'}
+                      </p>
+                      <p className="mt-1.5 font-display text-lg font-semibold text-emerald-700">
+                        ₹{paid.toLocaleString('en-IN')}
+                      </p>
+                    </div>
+
+                    {!settled && (
+                      <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 text-center">
+                        <p className="eyebrow text-red-700">Remaining</p>
+                        <p className="mt-1.5 font-display text-lg font-semibold text-red-600">
+                          ₹{remaining.toLocaleString('en-IN')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {(parseFloat(selectedOrder.total_price) || 0) -
+                (parseFloat(selectedOrder.advance_paid) || 0) <=
+                0 && (
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-emerald-800">
+                  <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+                  Paid in full — no balance due
                 </div>
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5 text-center">
-                  <p className="eyebrow text-emerald-700/70">Advance</p>
-                  <p className="mt-1.5 font-display text-lg font-extrabold text-emerald-700">
-                    ₹{selectedOrder.advance_paid || 0}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-red-200 bg-red-50/60 p-3.5 text-center">
-                  <p className="eyebrow text-red-700/70">Remaining</p>
-                  <p className="mt-1.5 font-display text-lg font-extrabold text-red-600">
-                    ₹{(selectedOrder.total_price || 0) - (selectedOrder.advance_paid || 0)}
-                  </p>
-                </div>
-              </div>
+              )}
             </div>
 
             <div className="sticky bottom-0 rounded-b-2xl border-t border-stone-200 bg-stone-50/95 p-4 backdrop-blur">
