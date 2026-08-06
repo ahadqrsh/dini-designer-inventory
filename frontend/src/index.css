@@ -1,0 +1,350 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DINI DESIGNERS — DESIGN SYSTEM
+   Warm beige canvas, cream surfaces, antique brass accent,
+   Fraunces serif display over Inter body.
+   ============================================================ */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+    background-color: #f0e9dc;
+    /* Barely-there warmth so the beige doesn't read as flat card stock */
+    background-image: radial-gradient(
+        1100px 520px at 8% -10%,
+        rgba(176, 141, 87, 0.14),
+        transparent 62%
+      ),
+      radial-gradient(900px 460px at 96% -6%, rgba(38, 33, 26, 0.05), transparent 58%);
+    background-attachment: fixed;
+    color: #26211a;
+    font-family: theme('fontFamily.body');
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-display {
+    font-family: theme('fontFamily.display');
+    font-optical-sizing: auto;
+    letter-spacing: -0.005em;
+  }
+
+  :focus-visible {
+    outline: 2px solid #b08d57;
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  td,
+  th,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  ::selection {
+    background: #e9d9b8;
+    color: #241c11;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #d8cdb9 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #d8cdb9;
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #b5a992;
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* ---------- Surfaces ---------- */
+  .card {
+    @apply bg-white rounded-2xl border border-stone-200 shadow-card;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-card-hover hover:border-stone-300;
+  }
+
+  .card-head {
+    @apply px-5 py-4 sm:px-6 sm:py-5 border-b border-stone-200;
+  }
+
+  .card-body {
+    @apply p-5 sm:p-6;
+  }
+
+  .panel-warm {
+    @apply rounded-2xl border border-amber-200 bg-gradient-to-b from-amber-50 to-white;
+  }
+
+  .panel-muted {
+    @apply rounded-2xl border border-stone-200 bg-stone-100/60;
+  }
+
+  /**
+   * Light page banner. Replaces the old dark gradient headers so pages sit
+   * calmly on beige, with a thin gold rule for the premium cue.
+   */
+  .page-banner {
+    @apply relative overflow-hidden border-b border-stone-200 bg-banner-cream px-5 py-6 sm:px-6;
+  }
+
+  .page-banner::before {
+    content: '';
+    @apply absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500 to-transparent;
+  }
+
+  /* Small dark chip — avatars, icon tiles */
+  .chip-dark {
+    @apply bg-brass-sheen text-amber-100;
+  }
+
+  /* Gold-tinted icon tile for light banners */
+  .tile-gold {
+    @apply grid place-items-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-600;
+  }
+
+  /* ---------- Typography ---------- */
+  .page-title {
+    @apply font-display text-xl sm:text-[26px] font-semibold tracking-tight text-stone-900;
+  }
+
+  .section-title {
+    @apply font-display text-lg font-semibold tracking-tight text-stone-900;
+  }
+
+  .eyebrow {
+    @apply text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500;
+  }
+
+  .subtle {
+    @apply text-xs text-stone-500;
+  }
+
+  /* ---------- Forms ---------- */
+  .label {
+    @apply block text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500 mb-1.5;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm text-stone-900
+           shadow-sm transition duration-150 placeholder:text-stone-400
+           hover:border-stone-400
+           focus:border-amber-500 focus:ring-4 focus:ring-amber-500/15 focus:outline-none
+           disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500 disabled:border-stone-200;
+  }
+
+  .select {
+    @apply input appearance-none bg-no-repeat pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238F8570' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.85rem center;
+    background-size: 16px;
+  }
+
+  .input-numeric {
+    @apply text-center font-mono tabular-nums;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5
+           text-[11px] font-bold uppercase tracking-[0.12em] leading-none
+           transition-all duration-150 select-none
+           disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none;
+  }
+
+  /* Antique brass at 4.8:1 against white text */
+  .btn-primary {
+    @apply btn bg-amber-600 text-white shadow-sm
+           hover:bg-amber-700 hover:shadow-md
+           active:translate-y-px active:shadow-sm;
+  }
+
+  .btn-accent {
+    @apply btn bg-stone-900 text-stone-50 shadow-sm
+           hover:bg-stone-800 hover:shadow-md
+           active:translate-y-px active:shadow-sm;
+  }
+
+  .btn-outline {
+    @apply btn border border-stone-300 bg-white text-stone-700 shadow-sm
+           hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700
+           active:translate-y-px;
+  }
+
+  .btn-ghost {
+    @apply btn text-stone-500 hover:bg-stone-100 hover:text-stone-800;
+  }
+
+  .btn-success {
+    @apply btn bg-emerald-700 text-white shadow-sm hover:bg-emerald-800 hover:shadow-md active:translate-y-px;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-700 text-white shadow-sm hover:bg-red-800 hover:shadow-md active:translate-y-px;
+  }
+
+  .btn-sm {
+    @apply px-3 py-2 text-[10px] rounded-lg gap-1.5;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3.5 text-xs;
+  }
+
+  .btn-block {
+    @apply w-full;
+  }
+
+  /* ---------- Pills ---------- */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1
+           text-[10px] font-bold uppercase tracking-[0.1em] whitespace-nowrap;
+  }
+
+  .pill-neutral {
+    @apply pill border-stone-200 bg-stone-100 text-stone-600;
+  }
+
+  .pill-amber {
+    @apply pill border-amber-200 bg-amber-50 text-amber-700;
+  }
+
+  .pill-blue {
+    @apply pill border-blue-200 bg-blue-50 text-blue-800;
+  }
+
+  .pill-purple {
+    @apply pill border-purple-200 bg-purple-50 text-purple-800;
+  }
+
+  .pill-green {
+    @apply pill border-emerald-200 bg-emerald-50 text-emerald-800;
+  }
+
+  .pill-red {
+    @apply pill border-red-200 bg-red-50 text-red-800;
+  }
+
+  .pill-select {
+    @apply cursor-pointer appearance-none rounded-full border pl-3 pr-7 py-1.5
+           text-[10px] font-bold uppercase tracking-[0.1em]
+           bg-no-repeat transition focus:outline-none focus:ring-4 focus:ring-amber-500/15;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.5rem center;
+    background-size: 12px;
+  }
+
+  /* ---------- Alerts ---------- */
+  .alert {
+    @apply flex items-start gap-2.5 rounded-xl border px-4 py-3 text-xs font-semibold animate-fade-in;
+  }
+
+  .alert-error {
+    @apply alert border-red-200 bg-red-50 text-red-800;
+  }
+
+  .alert-success {
+    @apply alert border-emerald-200 bg-emerald-50 text-emerald-800;
+  }
+
+  .alert-info {
+    @apply alert border-blue-200 bg-blue-50 text-blue-800;
+  }
+
+  /* ---------- Tables ---------- */
+  .table-wrap {
+    @apply overflow-x-auto;
+  }
+
+  .table {
+    @apply w-full text-left text-sm border-collapse;
+  }
+
+  .table thead th {
+    @apply bg-stone-100/70 px-4 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-stone-500
+           border-b border-stone-200 whitespace-nowrap;
+  }
+
+  .table tbody td {
+    @apply px-4 py-3.5 align-middle border-b border-stone-200/70;
+  }
+
+  .table tbody tr {
+    @apply transition-colors hover:bg-amber-50/60;
+  }
+
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .table-dark thead th {
+    @apply bg-stone-900 text-amber-200/90 border-b-0;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar {
+    @apply flex h-full w-64 shrink-0 flex-col border-r border-stone-200 bg-stone-50;
+  }
+
+  .side-link {
+    @apply relative flex items-center gap-3 rounded-xl px-3.5 py-2.5
+           text-[12px] font-semibold tracking-wide transition-all duration-150;
+  }
+
+  .side-link-idle {
+    @apply text-stone-600 hover:bg-amber-50 hover:text-amber-700;
+  }
+
+  /* Gold rule + tint marks the active section */
+  .side-link-active {
+    @apply bg-amber-50 text-amber-700;
+  }
+
+  .side-link-active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-full bg-amber-500;
+  }
+
+  /* ---------- Bits ---------- */
+  .divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-stone-200 to-transparent;
+  }
+
+  .gold-rule {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-amber-400 to-transparent;
+  }
+
+  .empty-state {
+    @apply flex flex-col items-center justify-center gap-2 px-6 py-14 text-center;
+  }
+}
