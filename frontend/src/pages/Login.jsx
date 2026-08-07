@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Scissors,
   Mail,
   Lock,
   AlertCircle,
@@ -11,6 +10,7 @@ import {
   EyeOff,
 } from '../components/Icons';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -68,7 +68,7 @@ export default function Login() {
 
         <div className="relative flex items-center gap-3">
           <span className="grid h-11 w-11 place-items-center rounded-2xl bg-amber-100/10 ring-1 ring-amber-200/25 backdrop-blur">
-            <Scissors className="h-5 w-5 text-amber-200" strokeWidth={2.5} />
+            <img src={logo} alt="Dini Designers" className="h-7 w-7 object-contain" />
           </span>
           <div>
             <p className="font-display text-[21px] font-semibold tracking-tight text-amber-50 leading-none">
@@ -114,7 +114,7 @@ export default function Login() {
           {/* Mobile brand */}
           <div className="lg:hidden mb-8 flex flex-col items-center text-center">
             <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brass-sheen shadow-card">
-              <Scissors className="h-6 w-6 text-amber-200" strokeWidth={2.5} />
+              <img src={logo} alt="Dini Designers" className="h-8 w-8 object-contain" />
             </span>
             <p className="mt-4 font-display text-xl font-semibold tracking-tight text-stone-900">
               Dini Designers

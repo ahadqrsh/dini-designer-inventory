@@ -9,11 +9,11 @@ import {
     LogOut,
     Menu,
     X,
-    Scissors,
     CalendarCheck,
 } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import { LOGIN_PATH } from '../routes/paths';
+import logo from '../assets/logo.png';
 
 export default function Layout() {
     const { role, logout } = useAuth();
@@ -55,7 +55,7 @@ export default function Layout() {
             <div className="border-b border-stone-200 px-5 py-6">
                 <div className="flex items-center gap-3">
                     <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl chip-dark shadow-sm">
-                        <Scissors className="h-[18px] w-[18px]" strokeWidth={2} />
+                        <img src={logo} alt="Dini Designers" className="h-7 w-7 object-contain" />
                     </span>
                     <div className="min-w-0">
                         <p className="font-display text-[19px] font-semibold leading-none tracking-tight text-stone-900">
@@ -162,7 +162,7 @@ export default function Layout() {
                             <Menu className="h-4 w-4" strokeWidth={2.5} />
                         </button>
                         <span className="grid h-8 w-8 place-items-center rounded-lg chip-dark">
-                            <Scissors className="h-3.5 w-3.5" strokeWidth={2} />
+                            <img src={logo} alt="Dini Designers" className="h-5 w-5 object-contain" />
                         </span>
                         <p className="font-display text-base font-semibold tracking-tight text-stone-900">
                             Dini Designers
