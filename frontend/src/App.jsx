@@ -12,6 +12,7 @@ import FabricInventory from './pages/admin/FabricInventory';
 import TaskManagement from './pages/admin/TaskManagement';
 import Attendance from './pages/admin/Attendance';
 import MyTasks from './pages/worker/MyTasks';
+import MyAttendance from './pages/worker/MyAttendance';
 import CreateEmployee from './pages/admin/CreateEmployee';
 
 const Unauthorized = () => (
@@ -92,6 +93,7 @@ export default function App() {
                     <Route element={<ProtectedRoute allowedRoles={['Admin', 'admin', 'Worker', 'worker', 'Tailor', 'Staff']} />}>
                         <Route element={<Layout />}>
                             <Route path="/my-tasks" element={<MyTasks />} />
+                            <Route path="/my-attendance" element={<MyAttendance />} />
                         </Route>
                     </Route>
 

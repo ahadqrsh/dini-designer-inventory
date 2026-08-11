@@ -11,7 +11,17 @@ import {
   Inbox,
   ListChecks,
   UserCheck,
+  LogIn,
+  Pencil,
 } from '../../components/Icons';
+import {
+  toDateInput,
+  shiftDate,
+  toTimeInput,
+  nowHHMM,
+  formatTime12,
+  hoursBetween,
+} from '../../lib/attendanceUtils';
 
 const STATUSES = ['Present', 'Absent', 'Half Day', 'Leave'];
 
@@ -31,21 +41,6 @@ const SUMMARY_TONE = {
   'Unmarked': 'text-stone-400',
 };
 
-// yyyy-mm-dd for the local timezone (toISOString would shift the date)
-const toDateInput = (d) => {
-  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-};
-
-const shiftDate = (isoDate, days) => {
-  const d = new Date(`${isoDate}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return toDateInput(d);
-};
-
-// Postgres returns 'HH:MM:SS'; <input type="time"> wants 'HH:MM'
-const toTimeInput = (t) => (t ? String(t).slice(0, 5) : '');
-
 export default function Attendance() {
   const today = toDateInput(new Date());
 
@@ -56,6 +51,9 @@ export default function Attendance() {
   const [savedId, setSavedId] = useState(null);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  // "workerId:field" of the clock cell currently open for manual correction
+  const [editingCell, setEditingCell] = useState(null);
 
   const fetchRoster = useCallback(async (forDate) => {
     setLoading(true);
@@ -91,6 +89,11 @@ export default function Attendance() {
     fetchRoster(date);
   }, [date, fetchRoster]);
 
+  useEffect(() => {
+    // Never leave an edit box open for a worker no longer on screen (date change)
+    setEditingCell(null);
+  }, [date]);
+
   // Persist one worker's row. Optimistic: the UI updates first, and reverts
   // only if the write actually fails.
   const persist = async (row, patch) => {
@@ -120,6 +123,15 @@ export default function Attendance() {
       setSavedId(row.worker_id);
       setTimeout(() => setSavedId((id) => (id === row.worker_id ? null : id)), 1600);
     }
+  };
+
+  // One click, current server-side wall clock — no typing. Checking in on an
+  // otherwise unmarked day also implies the worker is present, so the status
+  // fills itself in rather than requiring a second action.
+  const handleStamp = (row, field) => {
+    const patch = { [field]: nowHHMM() };
+    if (field === 'check_in' && !row.status) patch.status = 'Present';
+    persist(row, patch);
   };
 
   const markAllPresent = async () => {
@@ -169,6 +181,97 @@ export default function Attendance() {
     month: 'long',
     year: 'numeric',
   });
+
+  /**
+   * A clock cell moves through up to four states:
+   *  - off        Absent/Leave — no shift, nothing to show
+   *  - empty      today: a one-tap "Clock In/Out" stamp button
+   *               past:  a quiet "+ Add time" prompt (there's no "now" to stamp)
+   *  - filled     the stamped/typed time, with a pencil to correct it by hand
+   *  - editing    a native time input, for the manual-correction fallback
+   */
+  const renderClockCell = (row, field) => {
+    const value = row[field];
+    const off = row.status === 'Absent' || row.status === 'Leave';
+    const editing = editingCell === `${row.worker_id}:${field}`;
+    const label = field === 'check_in' ? 'Clock In' : 'Clock Out';
+    const blockedByMissingCheckIn = field === 'check_out' && !row.check_in;
+
+    if (off) {
+      return <span className="text-sm text-stone-300">—</span>;
+    }
+
+    if (editing) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="time"
+            autoFocus
+            value={value}
+            onChange={(e) => persist(row, { [field]: e.target.value })}
+            onBlur={() => setEditingCell(null)}
+            className="input w-28 px-2 py-1.5 text-xs"
+          />
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setEditingCell(null)}
+            aria-label="Done editing"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-emerald-600 transition-colors hover:bg-emerald-50"
+          >
+            <CheckCircle2 className="h-4 w-4" strokeWidth={2.5} />
+          </button>
+        </div>
+      );
+    }
+
+    if (!value) {
+      if (isToday) {
+        return (
+          <button
+            type="button"
+            onClick={() => handleStamp(row, field)}
+            disabled={blockedByMissingCheckIn}
+            title={blockedByMissingCheckIn ? 'Clock in first' : undefined}
+            className="btn-outline btn-sm"
+          >
+            <LogIn className="h-3 w-3" strokeWidth={2.5} />
+            {label}
+          </button>
+        );
+      }
+      return (
+        <button
+          type="button"
+          onClick={() => setEditingCell(`${row.worker_id}:${field}`)}
+          className="text-xs font-semibold text-stone-400 underline decoration-dotted underline-offset-4 transition-colors hover:text-amber-700"
+        >
+          + Add time
+        </button>
+      );
+    }
+
+    const duration = field === 'check_out' ? hoursBetween(row.check_in, row.check_out) : null;
+
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setEditingCell(`${row.worker_id}:${field}`)}
+          className="group inline-flex items-center gap-1.5 rounded-lg px-1.5 py-1 transition-colors hover:bg-stone-100"
+        >
+          <span className="font-mono text-xs font-bold tabular-nums text-stone-800">
+            {formatTime12(value)}
+          </span>
+          <Pencil
+            className="h-3 w-3 text-stone-300 transition-colors group-hover:text-stone-500"
+            strokeWidth={2.2}
+          />
+        </button>
+        {duration && <span className="pill-neutral">{duration}</span>}
+      </div>
+    );
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -252,7 +355,11 @@ export default function Attendance() {
             </span>
             <div>
               <h2 className="section-title">Staff Roster</h2>
-              <p className="subtle">Changes save as you make them</p>
+              <p className="subtle">
+                {isToday
+                  ? 'Tap Clock In / Clock Out to stamp the current time'
+                  : 'Viewing a past date — times are entered by hand'}
+              </p>
             </div>
           </div>
 
@@ -302,7 +409,6 @@ export default function Attendance() {
               <tbody>
                 {roster.map((row) => {
                   const status = row.status || 'Unmarked';
-                  const off = row.status === 'Absent' || row.status === 'Leave';
 
                   return (
                     <tr key={row.worker_id}>
@@ -320,6 +426,7 @@ export default function Attendance() {
                             // rather than storing hours for a day not worked.
                             const clearsTimes =
                               nextStatus === 'Absent' || nextStatus === 'Leave';
+                            if (clearsTimes) setEditingCell(null);
                             persist(
                               row,
                               clearsTimes
@@ -340,25 +447,8 @@ export default function Attendance() {
                         </select>
                       </td>
 
-                      <td>
-                        <input
-                          type="time"
-                          value={row.check_in}
-                          disabled={off}
-                          onChange={(e) => persist(row, { check_in: e.target.value })}
-                          className="input w-32 px-2.5 py-1.5 text-xs"
-                        />
-                      </td>
-
-                      <td>
-                        <input
-                          type="time"
-                          value={row.check_out}
-                          disabled={off}
-                          onChange={(e) => persist(row, { check_out: e.target.value })}
-                          className="input w-32 px-2.5 py-1.5 text-xs"
-                        />
-                      </td>
+                      <td>{renderClockCell(row, 'check_in')}</td>
+                      <td>{renderClockCell(row, 'check_out')}</td>
 
                       <td className="max-w-xs">
                         {row.task_count === 0 ? (
@@ -409,7 +499,8 @@ export default function Attendance() {
         <div className="border-t border-stone-200 bg-stone-50/60 px-5 py-3">
           <p className="flex items-center gap-1.5 text-[11px] text-stone-400">
             <Clock className="h-3 w-3" strokeWidth={2.5} />
-            Clock times are disabled for Absent and Leave.
+            Clock In / Clock Out stamp the current time automatically. Use the pencil next to a
+            time to correct it by hand.
           </p>
         </div>
       </div>

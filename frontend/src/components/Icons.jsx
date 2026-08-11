@@ -98,6 +98,21 @@ export const LogOut = (p) => (
     </Icon>
 );
 
+export const LogIn = (p) => (
+    <Icon {...p}>
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+        <polyline points="10 17 15 12 10 7" />
+        <line x1="15" x2="3" y1="12" y2="12" />
+    </Icon>
+);
+
+export const Pencil = (p) => (
+    <Icon {...p}>
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        <path d="m15 5 4 4" />
+    </Icon>
+);
+
 export const Menu = (p) => (
     <Icon {...p}>
         <line x1="4" x2="20" y1="6" y2="6" />

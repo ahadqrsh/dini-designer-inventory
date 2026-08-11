@@ -45,7 +45,10 @@ export default function Layout() {
     ];
 
     // Strictly WORKER ONLY links
-    const workerLinks = [{ to: '/my-tasks', label: 'My Tasks', Icon: ListChecks }];
+    const workerLinks = [
+        { to: '/my-tasks', label: 'My Tasks', Icon: ListChecks },
+        { to: '/my-attendance', label: 'My Attendance', Icon: CalendarCheck },
+    ];
 
     const links = isAdmin ? adminLinks : workerLinks;
 
