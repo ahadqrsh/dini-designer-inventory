@@ -9,16 +9,44 @@ import {
   Layers,
   Loader2,
   Inbox,
+  Bell,
 } from '../../components/Icons';
 
 export default function MyTasks() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     fetchWorkerTasks();
+    fetchNotifications();
   }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('recipient_id', user.id)
+        .eq('is_read', false)
+        .order('created_at', { ascending: false });
+
+      setNotifications(data || []);
+    } catch (err) {
+      console.error('Notification fetch error:', err);
+    }
+  };
+
+  const markNotificationRead = async (id) => {
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
 
   const fetchWorkerTasks = async () => {
     setLoading(true);
@@ -39,21 +67,31 @@ export default function MyTasks() {
 
       if (taskErr) throw taskErr;
 
-      if (!rawTasks || rawTasks.length === 0) {
+      // Fabric issuance is logged as a task row behind the scenes (see
+      // IssueFabricSection.jsx) but isn't work for the worker to action —
+      // keep it out of their task list.
+      const pureTasks = (rawTasks || []).filter(
+        (t) => !t.task_details || !t.task_details.toLowerCase().startsWith('issued ')
+      );
+
+      if (pureTasks.length === 0) {
         setTasks([]);
         return;
       }
 
       const { data: ordersData } = await supabase
         .from('orders')
-        .select('*');
+        .select('id, sub_category, customers(name)');
 
       const orderMap = (ordersData || []).reduce((acc, o) => {
-        acc[o.id] = o.order_number ? `#${o.order_number}` : o.customer_name || o.id;
+        const custName = o.customers?.name;
+        acc[o.id] = custName
+          ? `${custName}${o.sub_category ? ' — ' + o.sub_category : ''}`
+          : `Order ${String(o.id).slice(0, 8)}`;
         return acc;
       }, {});
 
-      const mappedTasks = rawTasks.map((t) => ({
+      const mappedTasks = pureTasks.map((t) => ({
         ...t,
         order_display: orderMap[t.order_id] || 'General Work',
       }));
@@ -82,7 +120,7 @@ export default function MyTasks() {
       const safeDetails = typeof taskDetails === 'string' ? taskDetails : '';
       const previewText = safeDetails ? safeDetails.slice(0, 40) : 'Task details updated';
 
-      await supabase.from('notifications').insert([
+      const { error: notifyError } = await supabase.from('notifications').insert([
         {
           user_role: 'admin',
           title: 'Task Marked for Review',
@@ -90,6 +128,7 @@ export default function MyTasks() {
           is_read: false,
         },
       ]);
+      if (notifyError) console.error('Failed to notify admin:', notifyError.message);
 
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, status: 'Under Review' } : t))
@@ -124,6 +163,41 @@ export default function MyTasks() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
+      {/* New-task notifications */}
+      {notifications.length > 0 && (
+        <div className="panel-warm space-y-2.5 p-4">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.12em] text-amber-900">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-600"></span>
+              </span>
+              <Bell className="h-3.5 w-3.5" strokeWidth={2.5} />
+              Notifications ({notifications.length})
+            </span>
+          </div>
+          <div className="space-y-1.5">
+            {notifications.map((n) => (
+              <div
+                key={n.id}
+                className="flex items-center justify-between gap-4 rounded-xl border border-amber-200/80 bg-white px-3.5 py-2.5 text-xs shadow-sm"
+              >
+                <div className="min-w-0">
+                  <span className="font-bold text-stone-900">{n.title}: </span>
+                  <span className="text-stone-600">{n.message}</span>
+                </div>
+                <button
+                  onClick={() => markNotificationRead(n.id)}
+                  className="shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-amber-900 transition-colors hover:bg-amber-100"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="card flex flex-wrap items-center justify-between gap-4 p-5">
         <div className="flex items-center gap-3">

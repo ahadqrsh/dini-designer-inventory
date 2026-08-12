@@ -10,6 +10,8 @@ import {
     Menu,
     X,
     CalendarCheck,
+    Wallet,
+    History,
 } from './Icons';
 import { useAuth } from '../context/AuthContext';
 import { LOGIN_PATH } from '../routes/paths';
@@ -41,6 +43,8 @@ export default function Layout() {
         { to: '/admin/inventory', label: 'Fabric Stock', Icon: Layers },
         { to: '/admin/tasks', label: 'Assign Tasks', Icon: ListChecks },
         { to: '/admin/attendance', label: 'Attendance', Icon: CalendarCheck },
+        { to: '/admin/advances', label: 'Advance Payments', Icon: Wallet },
+        { to: '/admin/worker-overview', label: 'Worker Overview', Icon: History },
         { to: '/admin/employees/new', label: 'Create Employee', Icon: UserPlus },
     ];
 
@@ -48,6 +52,7 @@ export default function Layout() {
     const workerLinks = [
         { to: '/my-tasks', label: 'My Tasks', Icon: ListChecks },
         { to: '/my-attendance', label: 'My Attendance', Icon: CalendarCheck },
+        { to: '/my-advances', label: 'My Advances', Icon: Wallet },
     ];
 
     const links = isAdmin ? adminLinks : workerLinks;

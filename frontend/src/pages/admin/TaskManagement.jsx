@@ -15,6 +15,16 @@ import {
     Inbox,
 } from '../../components/Icons';
 
+// Orders have no order_number/customer_name column of their own — the
+// customer's name lives on the linked `customers` row, so it must be
+// joined in rather than read off the order directly.
+const orderLabel = (o) => {
+    const custName = o.customers?.name;
+    const garment = o.sub_category;
+    if (custName) return garment ? `${custName} — ${garment}` : custName;
+    return `Order ${String(o.id).slice(0, 8)}`;
+};
+
 export default function TaskManagement() {
     const [employees, setEmployees] = useState([]);
     const [orders, setOrders] = useState([]);
@@ -53,7 +63,9 @@ export default function TaskManagement() {
                 setEmployees(workers);
             }
 
-            const { data: ordData } = await supabase.from('orders').select('*');
+            const { data: ordData } = await supabase
+                .from('orders')
+                .select('*, customers(name, phone)');
             setOrders(ordData || []);
         } catch (err) {
             console.error('Fetch exception:', err);
@@ -87,9 +99,11 @@ export default function TaskManagement() {
                 return acc;
             }, {});
 
-            const { data: ordersData } = await supabase.from('orders').select('*');
+            const { data: ordersData } = await supabase
+                .from('orders')
+                .select('*, customers(name, phone)');
             const orderMap = (ordersData || []).reduce((acc, o) => {
-                acc[o.id] = o.order_number ? `#${o.order_number}` : o.customer_name || o.id;
+                acc[o.id] = orderLabel(o);
                 return acc;
             }, {});
 
@@ -115,10 +129,13 @@ export default function TaskManagement() {
 
     const fetchNotifications = async () => {
         try {
+            // Scoped to broadcast admin notifications only — targeted worker
+            // notifications (recipient_id set) belong on the worker's own page.
             const { data } = await supabase
                 .from('notifications')
                 .select('*')
                 .eq('is_read', false)
+                .eq('user_role', 'admin')
                 .order('created_at', { ascending: false });
 
             setNotifications(data || []);
@@ -159,6 +176,18 @@ export default function TaskManagement() {
             const { error } = await supabase.from('tasks').insert([payload]);
 
             if (error) throw error;
+
+            // Best-effort — a failed notification shouldn't undo the assignment.
+            const { error: notifyError } = await supabase.from('notifications').insert([
+                {
+                    recipient_id: selectedEmployee,
+                    user_role: 'worker',
+                    title: 'New Task Assigned',
+                    message: `You've been assigned: "${taskDetails.trim().slice(0, 60)}"`,
+                    is_read: false,
+                },
+            ]);
+            if (notifyError) console.error('Failed to notify worker:', notifyError.message);
 
             setMessage({ type: 'success', text: 'Task assigned successfully!' });
             setTaskDetails('');
@@ -356,12 +385,14 @@ export default function TaskManagement() {
                                         className="select"
                                     >
                                         <option value="">-- No Order Linked --</option>
-                                        {orders.map((ord) => (
-                                            <option key={ord.id} value={ord.id}>
-                                                {ord.order_number ? `#${ord.order_number} - ` : ''}
-                                                {ord.customer_name || ord.client_name || `Order ${ord.id.slice(0, 8)}`}
-                                            </option>
-                                        ))}
+                                        {orders
+                                            .filter((ord) => ord.status !== 'Delivered')
+                                            .map((ord) => (
+                                                <option key={ord.id} value={ord.id}>
+                                                    {orderLabel(ord)}
+                                                    {ord.status ? ` (${ord.status})` : ''}
+                                                </option>
+                                            ))}
                                     </select>
                                 </div>
                             </div>

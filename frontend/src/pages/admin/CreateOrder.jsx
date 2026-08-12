@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
+import { toDateInput } from '../../lib/attendanceUtils';
 import {
   Search,
   User,
@@ -13,16 +14,25 @@ import {
   AlertCircle,
   CheckCircle2,
   Info,
+  History,
 } from '../../components/Icons';
 
 export default function CreateOrder() {
+  const today = toDateInput(new Date());
+
   const [phone, setPhone] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [existingCustomerId, setExistingCustomerId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Every lookup creates a new order row (a new dress) rather than
+  // overwriting the customer's earlier ones — this just shows what's
+  // already on file so staff aren't guessing whether it stacked.
+  const [previousOrders, setPreviousOrders] = useState([]);
+
   // Order Header Details
+  const [orderDate, setOrderDate] = useState(today);
   const [mainCategory, setMainCategory] = useState('Indian');
   const [subCategory, setSubCategory] = useState('');
   const [colour, setColour] = useState('');
@@ -56,6 +66,15 @@ export default function CreateOrder() {
         setExistingCustomerId(record.customer_id);
         setCustomerName(record.customer_name);
 
+        // Show what this customer already has on file, so it's clear a new
+        // submission adds another dress rather than replacing the last one.
+        const { data: pastOrders } = await supabase
+          .from('orders')
+          .select('id, sub_category, colour, status, order_date, created_at')
+          .eq('customer_id', record.customer_id)
+          .order('order_date', { ascending: false });
+        setPreviousOrders(pastOrders || []);
+
         // Populate previous 20 measurements if available
         setMeasurements({
           chest: record.chest ?? '',
@@ -86,6 +105,7 @@ export default function CreateOrder() {
         });
       } else {
         setExistingCustomerId(null);
+        setPreviousOrders([]);
         setMessage({
           type: 'info',
           text: 'New customer phone number. Enter name and measurements.'
@@ -144,10 +164,12 @@ export default function CreateOrder() {
         return acc;
       }, {});
 
-      // Insert Order
+      // Insert Order — always a new row, even for a customer who already has
+      // orders on file, so each dress gets its own measurement record.
       const { error: orderError } = await supabase.from('orders').insert([
         {
           customer_id: customerId,
+          order_date: orderDate,
           main_category: mainCategory,
           sub_category: subCategory,
           colour,
@@ -160,12 +182,14 @@ export default function CreateOrder() {
 
       if (orderError) throw orderError;
 
-      setMessage({ type: 'success', text: 'Order saved with updated measurement record!' });
+      setMessage({ type: 'success', text: 'Order saved as a new record!' });
 
       // Reset Form
       setCustomerName('');
       setPhone('');
       setExistingCustomerId(null);
+      setPreviousOrders([]);
+      setOrderDate(today);
       setSubCategory('');
       setColour('');
       setTotalPrice('');
@@ -338,6 +362,38 @@ export default function CreateOrder() {
                 </div>
               </div>
             </div>
+
+            {previousOrders.length > 0 && (
+              <div className="panel-muted mt-4 p-4">
+                <p className="eyebrow mb-2.5 flex items-center gap-2">
+                  <History className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  {previousOrders.length} Previous {previousOrders.length === 1 ? 'Order' : 'Orders'} On File
+                </p>
+                <ul className="space-y-1.5">
+                  {previousOrders.map((o) => (
+                    <li
+                      key={o.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs"
+                    >
+                      <span className="font-semibold text-stone-800">
+                        {o.sub_category || 'Garment'}
+                        {o.colour ? ` · ${o.colour}` : ''}
+                      </span>
+                      <span className="flex items-center gap-3 text-stone-500">
+                        {new Date(`${o.order_date || o.created_at.slice(0, 10)}T00:00:00`).toLocaleDateString(
+                          'en-IN',
+                          { day: '2-digit', month: 'short', year: 'numeric' }
+                        )}
+                        <span className="pill-neutral">{o.status || 'Pending'}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2.5 text-[11px] text-stone-400">
+                  Submitting below adds a new order for this customer — it won't overwrite these.
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -353,7 +409,19 @@ export default function CreateOrder() {
             </div>
           </div>
 
-          <div className="card-body grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="card-body grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div>
+              <label className="label">Order Date *</label>
+              <input
+                type="date"
+                value={orderDate}
+                max={today}
+                onChange={(e) => setOrderDate(e.target.value)}
+                className="input"
+                required
+              />
+            </div>
+
             <div>
               <label className="label">Category</label>
               <select

@@ -11,8 +11,11 @@ import OrderList from './pages/admin/OrderList';
 import FabricInventory from './pages/admin/FabricInventory';
 import TaskManagement from './pages/admin/TaskManagement';
 import Attendance from './pages/admin/Attendance';
+import AdvancePayments from './pages/admin/AdvancePayments';
+import WorkerOverview from './pages/admin/WorkerOverview';
 import MyTasks from './pages/worker/MyTasks';
 import MyAttendance from './pages/worker/MyAttendance';
+import MyAdvances from './pages/worker/MyAdvances';
 import CreateEmployee from './pages/admin/CreateEmployee';
 
 const Unauthorized = () => (
@@ -85,6 +88,8 @@ export default function App() {
                             <Route path="/admin/inventory" element={<FabricInventory />} />
                             <Route path="/admin/tasks" element={<TaskManagement />} />
                             <Route path="/admin/attendance" element={<Attendance />} />
+                            <Route path="/admin/advances" element={<AdvancePayments />} />
+                            <Route path="/admin/worker-overview" element={<WorkerOverview />} />
                             <Route path="/admin/employees/new" element={<CreateEmployee />} />
                         </Route>
                     </Route>
@@ -94,6 +99,7 @@ export default function App() {
                         <Route element={<Layout />}>
                             <Route path="/my-tasks" element={<MyTasks />} />
                             <Route path="/my-attendance" element={<MyAttendance />} />
+                            <Route path="/my-advances" element={<MyAdvances />} />
                         </Route>
                     </Route>
 

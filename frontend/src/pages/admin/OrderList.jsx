@@ -93,7 +93,7 @@ export default function OrderList() {
           phone
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('order_date', { ascending: false });
 
     if (error) {
       console.error('Error fetching orders:', error);
@@ -264,7 +264,7 @@ export default function OrderList() {
                     return (
                       <tr key={order.id} className="group">
                         <td className="whitespace-nowrap font-mono text-xs text-stone-500">
-                          {new Date(order.created_at).toLocaleDateString('en-IN', {
+                          {new Date(`${order.order_date || order.created_at.slice(0, 10)}T00:00:00`).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: 'short',
                             year: 'numeric'
@@ -353,6 +353,12 @@ export default function OrderList() {
                 <p className="mt-1.5 flex items-center gap-1.5 font-mono text-xs text-stone-500">
                   <Phone className="h-3 w-3" strokeWidth={2.5} />
                   {selectedOrder.customers?.phone}
+                </p>
+                <p className="mt-1 font-mono text-xs text-stone-400">
+                  Ordered{' '}
+                  {new Date(
+                    `${selectedOrder.order_date || selectedOrder.created_at.slice(0, 10)}T00:00:00`
+                  ).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </p>
               </div>
               <button
